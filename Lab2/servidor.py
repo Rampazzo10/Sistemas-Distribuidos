@@ -62,6 +62,8 @@ def sort_words(word_frequency):
 if __name__ == "__main__":
 
     stop = False
+    # Nesta semântica, sempre haverá clientes, de modo que o servidor nunca encerrará
+    exist_clients = True
     msg = ''
     first_ten_words = list()
 
@@ -69,23 +71,27 @@ if __name__ == "__main__":
     sckt.bind((host, porta))
     sckt.listen(1)
 
-    newSckt, address = sckt.accept()
 
-    while not stop:
-        folder_path = 'files'
-        msg = newSckt.recv(1024)
-        msg = str(msg, encoding='utf-8')
-        if msg == 'closeConnection':
-            stop = True
-            print('Encerrando conexão...')
-        else:
-            # Constrói caminho completo do arquivo texto
-            file_path = os.path.join(os.path.dirname(__file__), folder_path, msg)
-            # Resultado será uma lista de tuplas do tipo [('palavra1', <frequencia>), ('palavra2', <frequencia>), ... ,]
-            first_ten_words = camada_processamento(file_path)
-            # Cast feito para string para retornar a mensagem ao cliente
-            first_ten_words = str(first_ten_words)
-            newSckt.send(bytes(first_ten_words, encoding='utf-8'))
+    while exist_clients:
+        print('Aguardando conexões...')
+        newSckt, address = sckt.accept()
+        stop = False
+        print('Conexão estabelecida com ' + str(address))
+        while not stop:
+            folder_path = 'files'
+            msg = newSckt.recv(1024)
+            msg = str(msg, encoding='utf-8')
+            if msg == 'closeConnection':
+                stop = True
+                print('Encerrando conexão com cliente ' + str(address))
+            else:
+                # Constrói caminho completo do arquivo texto
+                file_path = os.path.join(os.path.dirname(__file__), folder_path, msg)
+                # Resultado será uma lista de tuplas do tipo [('palavra1', <frequencia>), ('palavra2', <frequencia>), ... ,]
+                first_ten_words = camada_processamento(file_path)
+                # Cast feito para string para retornar a mensagem ao cliente
+                first_ten_words = str(first_ten_words)
+                newSckt.send(bytes(first_ten_words, encoding='utf-8'))
 
+        newSckt.close()
     sckt.close()
-    newSckt.close()
